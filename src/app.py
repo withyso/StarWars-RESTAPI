@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
+from models import db, User, Planets, Characters
 #from models import Person
 
 app = Flask(__name__)
@@ -36,14 +36,37 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
+#User Endpoints
 @app.route('/user', methods=['GET'])
 def handle_hello():
+    all_users = User.query.all()
+    users_serialized = []
+    for user in all_users:
+        users_serialized.append(user.serialize())
+    print(users_serialized)
+    return {'msg' : 'ok', 'data':users_serialized}, 200
 
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
-    }
+@app.route('/user/<int:id>', methods=['GET'])
+def get_single_user(id):
+    #user1 = Person.query.get(person_id)
+    single_user = User.query.get(id)
+    print(single_user)
+    if single_user is None:
+        return {"Error" : "User ID doesn't exist"}, 404
 
-    return jsonify(response_body), 200
+    return jsonify({"data" : single_user.serialize()})
+
+#Character Endpoints
+@app.route('/characters')
+def get_all_characters(): 
+    all_characters = Characters.query.all()
+    all_characters_serialized = []
+
+    for character in all_characters:
+        all_characters_serialized.append(character.serialize_prev())
+
+    print(all_characters_serialized)
+    return {"data" : all_characters_serialized}
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
