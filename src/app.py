@@ -80,6 +80,27 @@ def get_single_characters(id):
     return jsonify({'data': single_character.serialize()})
 
 #Create new character 
+@app.route('/create/character', methods=['POST'])
+def create_character():
+    body = request.get_json(silent=True)
+    new_character = Characters()
+    if body is None:
+        return jsonify({'Msg': 'Body must contain name and height as mandatory fields, mass and gender are not required'}),400
+    if 'name' not in body:
+        return jsonify({'Msg': 'Body field is required'}), 400
+    if 'height' not in body:
+        return jsonify({'msg': 'height field is required'}), 400
+    if body['gender'] == 'male' or 'female':
+        new_character.gender = body['gender']
+    if body['mass'] > 0: 
+        new_character.mass = body['mass']
+    new_character.name = body['name']
+    new_character.height = body['height']
+    db.session.add(new_character)
+    db.session.commit()
+
+    return jsonify({'Msg': 'New character created', 
+                    'data': new_character.serialize()})
 
 
 # this only runs if `$ python src/app.py` is executed
