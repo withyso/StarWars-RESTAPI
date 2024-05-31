@@ -46,6 +46,7 @@ def handle_hello():
     print(users_serialized)
     return {'msg' : 'ok', 'data':users_serialized}, 200
 
+#Generate single user using ID
 @app.route('/user/<int:id>', methods=['GET'])
 def get_single_user(id):
     #user1 = Person.query.get(person_id)
@@ -56,7 +57,7 @@ def get_single_user(id):
 
     return jsonify({"data" : single_user.serialize()})
 
-#Character Endpoints
+#Generate all characters
 @app.route('/characters')
 def get_all_characters(): 
     all_characters = Characters.query.all()
@@ -67,6 +68,19 @@ def get_all_characters():
 
     print(all_characters_serialized)
     return {"data" : all_characters_serialized}
+
+#Generate single character
+@app.route('/characters/<int:id>', methods=['GET'])
+def get_single_characters(id):
+    single_character = Characters.query.get(id)
+    
+    if single_character is None:
+        return jsonify({'Error': 'Character ID doesnt exist'}),404
+
+    return jsonify({'data': single_character.serialize()})
+
+#Create new character 
+
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
