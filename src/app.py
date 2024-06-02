@@ -167,7 +167,7 @@ def delete_planet(id):
     return jsonify({'Msg' : f'Planet with name {planet_to_delete.name} was deleted'})
 #--------------------------------------------------#
 
-#--- Favorite planets endpoints ---#
+#--- Favorite planets and characters endpoints ---#
 
 #Get user favorites
 @app.route('/user/<int:user_id>/favorites', methods=['GET'])
@@ -178,7 +178,8 @@ def get_user_favorites(user_id):
     favorite_user_planets = FavoritePlanets.query.filter_by(user_id = user_id).all()
     if len(favorite_user_planets) <= 0:
         return jsonify({'Msg': f'User with ID {user_id} doesnt have favorites'})
-    #Query to get favorites
+    
+#Query to get planets favorites
     favorite_planets = db.session.query(FavoritePlanets, Planets).join(Planets).filter(FavoritePlanets.user_id == user_id).all()
     user_favorite_planets_serialized = []
     for favorite_planet, planet in favorite_planets:
@@ -186,6 +187,8 @@ def get_user_favorites(user_id):
             'favorite_planet_id': favorite_planet.id,
             'planet_detail': planet.serialize(),
         })
+
+#Query to get character favorites
     favorite_characters = db.session.query(FavoriteCharacters, Characters).join(Characters).filter(FavoriteCharacters.user_id == user_id).all()
     user_favorite_characters_serialized = []
     for favorite_character, character in favorite_characters:
@@ -197,9 +200,49 @@ def get_user_favorites(user_id):
     
     return jsonify({'msg' : 'Ok', 
                     'favorite_planets': user_favorite_planets_serialized, 
-                    'favorite_characters': user_favorite_characters_serialized})
+                    'favorite_characters': user_favorite_characters_serialized}), 200
 
+#Add new character to favorites
+@app.route('/user/<int:user_id>/favorite/add/character', methods=['POST'])
+def user_new_character_favorite(user_id):
+    body = request.get_json(silent=True)
+    user = User.query.get(user_id)
+    character = Characters.query.get(body['character_id'])
+    user_favorites = FavoriteCharacters.query.all()
+    user_favorites_serialized = list(map(lambda userfav: userfav.serialize(), user_favorites))
+    if body is None: 
+        return jsonify({'error' : 'Body must contain info'}), 400
+    if 'character_id' not in body:
+        return jsonify({'error' : 'Body must contain character_id'}), 400
+    if user is None: 
+        return jsonify({'msg' : 'user ID doesnt exist'}),400
+    if character is None: 
+        return jsonify({'msg' : 'Character ID doesnt exist'}), 400
+    new_favorite = FavoriteCharacters()
+    new_favorite.user_id = user_id
+    new_favorite.character_id = body['character_id']
+    db.session.add(new_favorite)
+    db.session.commit()
+    
+    return jsonify({'msg' : 'New character added to favorite', 'success' : new_favorite.serialize()})
 
+#Delete character from favorites
+@app.route('/user/<int:user_id>/favorite/delete/character', methods=['DELETE'])
+def delete_character_favorite(user_id):
+    user = User.query.get(user_id)
+    body = request.get_json(silent=True)
+    id_favorite = body['favorite_id']
+    favorite = FavoriteCharacters.query.get(id_favorite)
+    if body is None:
+        return jsonify({'msg': 'Body must have id of the favorite'}), 400
+    if 'favorite_id' not in body:
+        return jsonify({'msg' : 'You should send the id of favorite_character_id Key to proceed'}), 400
+    if user is None: 
+        return jsonify({'msg' : 'User doesnt exist, check ID'}), 400
+    if favorite is None: 
+        return jsonify({'msg' : 'ID from favorites doesnt exist'}), 400
+
+    return jsonify({'Msg' : 'Character from favorites deleted', 'success' : favorite.serialize()})
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':

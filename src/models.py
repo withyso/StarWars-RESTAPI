@@ -45,7 +45,7 @@ class Characters(db.Model):
     gender = db.Column(db.String(10), nullable=True)
 
     def __repr__(self):
-        return f'Character ID: {self.id} Name: {self.name}'
+        return f'character_id: {self.id} name: {self.name}'
     
     def serialize(self):
         return {
@@ -90,7 +90,7 @@ class FavoriteCharacters(db.Model):
     def __repr__(self):
         return f'Al usuario {self.user_id} le gusta el personaje {self.character_id}'
     
-    def serializ(self):
+    def serialize(self):
         return {
             'id' : self.id,
             'user_id' : self.user_id,
