@@ -224,7 +224,7 @@ def user_new_character_favorite(user_id):
     db.session.add(new_favorite)
     db.session.commit()
     
-    return jsonify({'msg' : 'New character added to favorite', 'success' : new_favorite.serialize()})
+    return jsonify({'msg' : 'New character added to favorite', 'success' : new_favorite.serialize()}),201
 
 #Delete character from favorites
 @app.route('/user/<int:user_id>/favorite/delete/character', methods=['DELETE'])
@@ -243,6 +243,29 @@ def delete_character_favorite(user_id):
         return jsonify({'msg' : 'ID from favorites doesnt exist'}), 400
 
     return jsonify({'Msg' : 'Character from favorites deleted', 'success' : favorite.serialize()})
+
+#Add new planet to favorites
+@app.route('/user/<int:user_id>/favorites/add/planet', methods=['POST'])
+def add_new_favorite_planet(user_id):
+    body = request.get_json(silent=True)
+    user = User.query.get(user_id)
+    planet = Planets.query.get(body['planet_id'])
+    if body is None: 
+        return jsonify({'msg' : 'Body must contain info'}), 400
+    if user is None: 
+        return jsonify({'msg' : 'User doesnt exist'}), 400
+    if 'planet_id' not in body:
+        return jsonify({'msg' : 'body must containt planet_id key'}), 400
+    if planet is None: 
+        return jsonify({'msg' : 'planet doesnt exist'}), 400
+    new_favorite = FavoritePlanets()
+    new_favorite.user_id = user_id
+    new_favorite.planet_id = body['planet_id']
+    db.session.add(new_favorite)
+    db.session.commit()
+    print(planet)
+
+    return jsonify({'msg' : 'Success, planet added to favorite', 'data' : new_favorite.serialize()}), 200
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
