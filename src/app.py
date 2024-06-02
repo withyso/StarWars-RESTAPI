@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Planets, Characters
+from models import db, User, Planets, Characters, FavoritePlanets, FavoriteCharacters
 #from models import Person
 
 app = Flask(__name__)
@@ -57,6 +57,7 @@ def get_single_user(id):
 
     return jsonify({"data" : single_user.serialize()})
 
+#--- Character Endpoints ---#
 #Generate all characters
 @app.route('/characters')
 def get_all_characters(): 
@@ -64,7 +65,7 @@ def get_all_characters():
     all_characters_serialized = []
 
     for character in all_characters:
-        all_characters_serialized.append(character.serialize_prev())
+        all_characters_serialized.append(character.serialize_id_name())
 
     print(all_characters_serialized)
     return {"data" : all_characters_serialized}
@@ -101,6 +102,103 @@ def create_character():
 
     return jsonify({'Msg': 'New character created', 
                     'data': new_character.serialize()})
+
+#Delete Character
+@app.route('/delete/character/<int:id>', methods=['DELETE'])
+def delete_character(id):
+    character_to_delete = Characters.query.get(id)
+    if character_to_delete is None:
+        return jsonify({'Msg' : 'Character ID doesnt exist'}), 404
+    db.session.delete(character_to_delete)
+    db.session.commit()
+
+    return jsonify({'Msg' : f'Planet with name {character_to_delete.name} was deleted'})
+#--------------------------------------------------#
+
+#--- Planets endpoints ---#
+#Generate all planets
+@app.route('/planets', methods=['GET'])
+def get_all_planets():
+    all_planets = Planets.query.all()
+    all_planets_serialized = list(map(lambda planet: planet.serialize(), all_planets))
+
+    return jsonify({'Msg': 'Ok', 'data' : all_planets_serialized}), 200
+
+#Generate single planet
+@app.route('/planet/<int:id>', methods=['GET'])
+def get_single_planet(id):
+    single_planet = Planets.query.get(id)
+    print(single_planet)
+    if single_planet is None: 
+        return jsonify ({'Error' : "ID planet doesn't exist, please try with diferent id"}), 404
+
+    return jsonify({'Msg': 'Ok', 'Data' : single_planet.serialize()}), 200
+
+#Create new planet
+@app.route('/create/planet', methods=['POST'])
+def create_new_planet():
+    body = request.get_json(silent=True)
+    print(body)
+    new_planet = Planets()
+    if body is None:
+        return jsonify({'Msg' : 'Body must not be empty, please fill will all the info'}), 400
+    if 'name' not in body:
+        return jsonify({'Msg' : 'Please add planet name'}), 400
+    if 'population' not in body:
+        return jsonify({'Msg' : 'Please add planet population'}), 400
+    new_planet.name = body['name']
+    new_planet.population = body['population']
+    db.session.add(new_planet)
+    db.session.commit()
+
+    return jsonify({'Msg' : 'Planet created',
+                    'data' : new_planet.serialize()})
+
+#Delete Planet
+@app.route('/delete/planet/<int:id>', methods=['DELETE'])
+def delete_planet(id):
+    planet_to_delete = Planets.query.get(id)
+    print(planet_to_delete)
+    if planet_to_delete is None: 
+        return jsonify({'Error': 'Planet ID doesnt found'}), 404
+    db.session.delete(planet_to_delete)
+    db.session.commit()
+
+    return jsonify({'Msg' : f'Planet with name {planet_to_delete.name} was deleted'})
+#--------------------------------------------------#
+
+#--- Favorite planets endpoints ---#
+
+#Get user favorites
+@app.route('/user/<int:user_id>/favorites', methods=['GET'])
+def get_user_favorites(user_id):
+    user = User.query.get(user_id)
+    if user is None: 
+        return jsonify({'Msg' : f'User with ID {user_id} doesnt exist'}), 404
+    favorite_user_planets = FavoritePlanets.query.filter_by(user_id = user_id).all()
+    if len(favorite_user_planets) <= 0:
+        return jsonify({'Msg': f'User with ID {user_id} doesnt have favorites'})
+    #Query to get favorites
+    favorite_planets = db.session.query(FavoritePlanets, Planets).join(Planets).filter(FavoritePlanets.user_id == user_id).all()
+    user_favorite_planets_serialized = []
+    for favorite_planet, planet in favorite_planets:
+        user_favorite_planets_serialized.append({
+            'favorite_planet_id': favorite_planet.id,
+            'planet_detail': planet.serialize(),
+        })
+    favorite_characters = db.session.query(FavoriteCharacters, Characters).join(Characters).filter(FavoriteCharacters.user_id == user_id).all()
+    user_favorite_characters_serialized = []
+    for favorite_character, character in favorite_characters:
+        user_favorite_characters_serialized.append({
+            'favorite_character_id': favorite_character.id,
+            'character_detail': character.serialize_id_name()
+        })
+    print(user_favorite_characters_serialized)
+    
+    return jsonify({'msg' : 'Ok', 
+                    'favorite_planets': user_favorite_planets_serialized, 
+                    'favorite_characters': user_favorite_characters_serialized})
+
 
 
 # this only runs if `$ python src/app.py` is executed

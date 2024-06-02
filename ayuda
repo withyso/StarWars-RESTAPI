@@ -11,13 +11,16 @@ all_people = list(map(lambda x: x.serialize(), people_query))
 
 # get just one person
 user1 = Person.query.get(person_id)
+
 Inserting data
+
 Assuming you have a Person object in your models.py file.
 user1 = Person()
 user1.username = "my_super_username"
 user1.email = "my_super@email.com"
 db.session.add(user1)
 db.session.commit()
+
 Updating data
 user1 = Person.query.get(person_id)
 if user1 is None:
@@ -28,12 +31,14 @@ if "username" in body:
 if "email" in body:
     user1.email = body["email"]
 db.session.commit()
+
 Delete data
 user1 = Person.query.get(person_id)
 if user1 is None:
    return jsonify({'msg':'User not found'},404
 db.session.delete(user1)
 db.session.commit()
+
 Query Join and Serialize:
 favorite_planets = db.session.query(FavoritePlanets, Planets).join(Planets).filter(FavoritePlanets.user_id == id).all()
 favorite_planets_serialized = []
